@@ -18,6 +18,10 @@ const envSchema = z.object({
   REDIS_URL: z.string().min(1, "REDIS_URL is required"),
 
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters long"),
+
+  LOG_LEVEL: z
+    .enum(["fatal", "error", "warn", "info", "debug", "trace"])
+    .default("info"),
 });
 
 /**
@@ -26,8 +30,10 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error("❌ Invalid environment variables:");
-  console.error(parsed.error.format());
+  console.error(
+    { type: "env_validation_error", issues: parsed.error.format() },
+    "Invalid environment variables"
+  );
   process.exit(1);
 }
 

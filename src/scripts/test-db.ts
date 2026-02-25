@@ -3,15 +3,16 @@
 import { PoolExecutor } from "../infrastructure/database/executor.js";
 import { pool } from "../infrastructure/database/pool.js";
 import { withTransaction } from "../infrastructure/database/transaction.js";
+import { logger } from "../shared/logger/logger.js";
 
 const executor = new PoolExecutor();
 
 async function main() {
   try {
     const result = await executor.query("SELECT 1", [], "health.check");
-    console.log("Connection work: ", result.rows);
+    logger.info({ type: "connection_work", res: result.rows });
   } catch (error) {
-    console.error("Connection failed:", error);
+    logger.error({ type: "connection_failed", error });
   } finally {
     await pool.end();
   }

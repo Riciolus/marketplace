@@ -1,6 +1,7 @@
 import type { QueryResult } from "pg";
 import { pool } from "./pool.js";
 import { env } from "../../config/env.js";
+import { logger } from "../../shared/logger/logger.js";
 
 export interface QueryResultRow {
   [column: string]: any;
@@ -27,20 +28,23 @@ export class PoolExecutor implements QueryExecutor {
       const duration = Date.now() - start;
 
       if (duration > env.DB_SLOW_QUERY_THRESHOLD) {
-        console.warn({
+        logger.warn({
           type: "slow_query",
           queryName,
           duration,
+          threshold: env.DB_SLOW_QUERY_THRESHOLD,
         });
       }
 
       return result;
     } catch (error) {
-      console.error({
-        type: "query_error",
-        queryName,
-        error,
-      });
+      logger.error(
+        {
+          type: "query_error",
+          queryName,
+        },
+        "Database query failed"
+      );
       throw error;
     }
   }
