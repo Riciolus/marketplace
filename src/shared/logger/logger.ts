@@ -12,7 +12,7 @@ const devPrettyConfig = {
   },
 };
 
-export const logger = pino({
+export const loggerConfig = {
   level: env.LOG_LEVEL,
   base: null,
   serializers: {
@@ -23,4 +23,6 @@ export const logger = pino({
 
   // prevent log JWT or credentials, later
   // redact: ["req.headers.authorization"]
-});
+};
+
+export const logger = pino(loggerConfig);
