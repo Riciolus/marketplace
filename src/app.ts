@@ -1,8 +1,17 @@
 import Fastify from "fastify";
 import { loggerConfig } from "./shared/logger/logger.js";
 import { AppError } from "./shared/errors/AppError.js";
+import { userRoutes } from "./modules/user/user.routes.js";
+import { ZodError } from "zod";
+import { buildContainer } from "./bootstrap/container.js";
 
 export const app = Fastify({ logger: loggerConfig });
+
+const container = buildContainer();
+
+app.register(async (instance) => {
+  await userRoutes(instance, container.userController);
+});
 
 app.setErrorHandler(function (error, request, reply) {
   if (error instanceof AppError) {
@@ -17,6 +26,24 @@ app.setErrorHandler(function (error, request, reply) {
       success: false,
       message: error.expose ? error.message : "Something went wrong",
       code: error.code,
+    });
+  }
+
+  if (error instanceof ZodError) {
+    request.log.warn(
+      {
+        issues: error.issues,
+      },
+      "Validation error"
+    );
+
+    return reply.status(400).send({
+      success: false,
+      code: "VALIDATION_ERROR",
+      errors: error.issues.map((issue) => ({
+        field: issue.path.join("."),
+        message: issue.message,
+      })),
     });
   }
 
