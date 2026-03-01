@@ -1,5 +1,5 @@
 import { hash } from "bcrypt";
-import { BadRequestError, ConflictError } from "../../shared/errors/AppError.js";
+import { ConflictError, NotFoundError } from "../../shared/errors/AppError.js";
 import type { UserRepository } from "./user.repository.js";
 import type { CreateUserInput } from "./user.schema.js";
 
@@ -8,6 +8,16 @@ export class UserService {
 
   async getUsers() {
     return this.repo.findAll();
+  }
+
+  async getUserById(id: string) {
+    const user = await this.repo.findById(id);
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    return user;
   }
 
   async createUser({ email, password }: CreateUserInput) {

@@ -14,6 +14,16 @@ export class UserRepository {
     return result.rows;
   }
 
+  async findById(id: string) {
+    const result = await this.executor.query<UserRow>(
+      "SELECT id, email, role, created_at FROM users WHERE id = $1",
+      [id],
+      "user.findById"
+    );
+
+    return result.rows[0];
+  }
+
   async findByEmail(email: string) {
     const result = await this.executor.query<UserRow>(
       "SELECT id, email, role, created_at FROM users WHERE email = $1",
