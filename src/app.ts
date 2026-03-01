@@ -4,14 +4,25 @@ import { AppError } from "./shared/errors/AppError.js";
 import { userRoutes } from "./modules/user/user.routes.js";
 import { ZodError } from "zod";
 import { buildContainer } from "./bootstrap/container.js";
+import { authRoutes } from "./modules/auth/auth.route.js";
 
 export const app = Fastify({ logger: loggerConfig });
 
 const container = buildContainer();
 
-app.register(async (instance) => {
-  await userRoutes(instance, container.userController);
-});
+app.register(
+  async (instance) => {
+    await userRoutes(instance, container.userController);
+  },
+  { prefix: "/users" }
+);
+
+app.register(
+  async (instance) => {
+    await authRoutes(instance, container.authController);
+  },
+  { prefix: "/auth" }
+);
 
 app.setErrorHandler(function (error, request, reply) {
   if (error instanceof AppError) {
