@@ -12,7 +12,7 @@ export const createUserSchema = z.object({
 export const userResponseSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
-  role: z.enum(["user", "admin"]).default("user"),
+  role: z.enum(["admin", "user"]).default("user"),
   created_at: z.string().datetime(),
 });
 

@@ -5,10 +5,13 @@ import { userRoutes } from "./modules/user/user.routes.js";
 import { ZodError } from "zod";
 import { buildContainer } from "./bootstrap/container.js";
 import { authRoutes } from "./modules/auth/auth.route.js";
+import fastifyCookie from "@fastify/cookie";
 
 export const app = Fastify({ logger: loggerConfig });
 
 const container = buildContainer();
+
+await app.register(fastifyCookie);
 
 app.register(
   async (instance) => {

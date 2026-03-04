@@ -17,11 +17,12 @@ const envSchema = z.object({
 
   REDIS_URL: z.string().min(1, "REDIS_URL is required"),
 
-  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters long"),
-
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),
+
+  JWT_ACCESS_SECRET: z.string().min(32),
+  JWT_REFRESH_SECRET: z.string().min(32),
 });
 
 /**
