@@ -34,6 +34,6 @@ export class RedisSessionStore implements SessionStore {
   }
 
   async delete(userId: string, sessionId: string) {
-    await this.redis.del(userId, sessionId);
+    await this.redis.del(this.key(userId, sessionId));
   }
 }
