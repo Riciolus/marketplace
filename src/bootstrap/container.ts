@@ -9,6 +9,7 @@ import { AuthService } from "../modules/auth/auth.service.js";
 import { UserController } from "../modules/user/user.controller.js";
 import { UserRepository } from "../modules/user/user.repository.js";
 import { UserService } from "../modules/user/user.service.js";
+import { createAuthGuard } from "../shared/middleware/auth-guard.js";
 
 export function buildContainer() {
   const executor = new PoolExecutor();
@@ -18,11 +19,17 @@ export function buildContainer() {
   const userController = new UserController(userService);
   const jwtService = new JwtService();
   const sessionStore = new RedisSessionStore(redis);
+  const authGuard = createAuthGuard(jwtService);
 
   const authService = new AuthService(userRepository, jwtService, sessionStore);
   const authController = new AuthController(authService);
   return {
-    userController,
-    authController,
+    user: {
+      controller: userController,
+    },
+    auth: {
+      controller: authController,
+      guard: authGuard,
+    },
   };
 }

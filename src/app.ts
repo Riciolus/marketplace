@@ -15,14 +15,14 @@ await app.register(fastifyCookie);
 
 app.register(
   async (instance) => {
-    await userRoutes(instance, container.userController);
+    await userRoutes(instance, container.user.controller);
   },
   { prefix: "/users" }
 );
 
 app.register(
   async (instance) => {
-    await authRoutes(instance, container.authController);
+    await authRoutes(instance, container.auth.controller, container.auth.guard);
   },
   { prefix: "/auth" }
 );

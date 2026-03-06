@@ -42,4 +42,12 @@ export class AuthController {
         },
       });
   }
+
+  async logout(request: FastifyRequest, reply: FastifyReply) {
+    const { userId, sessionId } = request.user;
+
+    await this.service.logout(userId, sessionId);
+
+    reply.send({ success: true });
+  }
 }

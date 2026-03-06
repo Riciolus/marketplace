@@ -2,13 +2,13 @@ import jwt from "jsonwebtoken";
 import { env } from "../../config/env.js";
 
 type JwtPayload = {
-  jti: string;
+  jti: string; // session id
   sub: string; // user id
 };
 
 export class JwtService {
-  generateAccessToken(sub: string) {
-    return jwt.sign({ sub }, env.JWT_ACCESS_SECRET, {
+  generateAccessToken(payload: JwtPayload) {
+    return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
       expiresIn: "15m",
       issuer: "marketplace-api",
       audience: "marketplace-client",

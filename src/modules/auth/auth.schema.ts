@@ -8,3 +8,8 @@ export const loginSchema = z.object({
 export const refreshSchema = z.object({
   refreshToken: z.string().jwt(),
 });
+
+export const authHeaderSchema = z
+  .string()
+  .startsWith("Bearer ")
+  .transform((val) => val.slice(7));

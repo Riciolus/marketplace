@@ -35,7 +35,7 @@ export class AuthService {
 
     logger.info(user, sessionId);
 
-    const accessToken = this.jwtService.generateAccessToken(user.id);
+    const accessToken = this.jwtService.generateAccessToken(payload);
     const refreshToken = this.jwtService.generateRefreshToken(payload);
     const hashed = hashToken(refreshToken);
 
@@ -73,7 +73,7 @@ export class AuthService {
       jti: sessionId,
     };
 
-    const newAccessToken = this.jwtService.generateAccessToken(sub);
+    const newAccessToken = this.jwtService.generateAccessToken(payload);
     const newToken = this.jwtService.generateRefreshToken(payload);
     const hashed = hashToken(newToken);
 
@@ -83,5 +83,9 @@ export class AuthService {
       accessToken: newAccessToken,
       refreshToken: newToken,
     };
+  }
+
+  async logout(userId: string, sessionId: string) {
+    await this.sessionStore.delete(userId, sessionId);
   }
 }
