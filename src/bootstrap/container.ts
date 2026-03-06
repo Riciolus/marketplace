@@ -19,7 +19,7 @@ export function buildContainer() {
   const userController = new UserController(userService);
   const jwtService = new JwtService();
   const sessionStore = new RedisSessionStore(redis);
-  const authGuard = createAuthGuard(jwtService);
+  const authGuard = createAuthGuard(jwtService, sessionStore);
 
   const authService = new AuthService(userRepository, jwtService, sessionStore);
   const authController = new AuthController(authService);

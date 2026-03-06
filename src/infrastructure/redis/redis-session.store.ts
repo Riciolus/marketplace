@@ -11,6 +11,8 @@ export interface SessionStore {
   get(userId: string, sessionId: string): Promise<string | null>;
 
   delete(userId: string, sessionId: string): Promise<void>;
+
+  exist(userId: string, sessionId: string): Promise<number>;
 }
 
 export class RedisSessionStore implements SessionStore {
@@ -18,6 +20,10 @@ export class RedisSessionStore implements SessionStore {
 
   private key(userId: string, sessionId: string) {
     return `rt:${userId}:${sessionId}`;
+  }
+
+  async exist(userId: string, sessionId: string) {
+    return await this.redis.exists(this.key(userId, sessionId));
   }
 
   async save(
