@@ -43,6 +43,14 @@ export class AuthController {
       });
   }
 
+  async me(request: FastifyRequest, reply: FastifyReply) {
+    const { userId } = request.user;
+
+    const user = await this.service.getMe(userId);
+
+    reply.send({ success: true, data: user });
+  }
+
   async logout(request: FastifyRequest, reply: FastifyReply) {
     const { userId, sessionId } = request.user;
 

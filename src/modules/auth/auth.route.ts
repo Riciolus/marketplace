@@ -10,6 +10,8 @@ export async function authRoutes(
 
   app.post("/refresh", controller.refresh.bind(controller));
 
+  app.get("/me", { preHandler: [authGuard] }, controller.me.bind(controller));
+
   app.post(
     "/logout",
     { preHandler: [authGuard] },

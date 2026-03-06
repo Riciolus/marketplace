@@ -1,5 +1,5 @@
 import { compare } from "bcrypt";
-import { UnauthorizedError } from "../../shared/errors/AppError.js";
+import { NotFoundError, UnauthorizedError } from "../../shared/errors/AppError.js";
 import type { UserRepository } from "../user/user.repository.js";
 import type { JwtService } from "../../infrastructure/auth/jwt.js";
 import { randomUUID } from "crypto";
@@ -87,5 +87,15 @@ export class AuthService {
 
   async logout(userId: string, sessionId: string) {
     await this.sessionStore.delete(userId, sessionId);
+  }
+
+  async getMe(userId: string) {
+    const user = await this.repo.findById(userId);
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    return user;
   }
 }
