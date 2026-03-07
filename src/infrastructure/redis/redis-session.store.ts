@@ -11,6 +11,8 @@ export interface SessionStore {
 
   get(userId: string, sessionId: string): Promise<string | null>;
 
+  getDel(userId: string, sessionId: string): Promise<string | null>;
+
   exist(userId: string, sessionId: string): Promise<number>;
 
   delete(userId: string, sessionId: string): Promise<void>;
@@ -40,6 +42,10 @@ export class RedisSessionStore implements SessionStore {
 
   async get(userId: string, sessionId: string) {
     return await this.redis.get(this.key(userId, sessionId));
+  }
+
+  async getDel(userId: string, sessionId: string): Promise<string | null> {
+    return await this.redis.getdel(this.key(userId, sessionId));
   }
 
   async delete(userId: string, sessionId: string) {

@@ -55,19 +55,17 @@ export class AuthService {
     }
 
     const tokenHashed = hashToken(token);
-    const tokenRedis = await this.sessionStore.get(sub, jti);
+    const tokenRedis = await this.sessionStore.getDel(sub, jti);
 
     if (!tokenRedis) {
       await this.sessionStore.deleteAll(sub);
-
       throw new UnauthorizedError("Refresh token reuse detected");
     }
 
     if (tokenHashed !== tokenRedis) {
+      await this.sessionStore.deleteAll(sub);
       throw new UnauthorizedError("Invalid refresh token");
     }
-
-    await this.sessionStore.delete(sub, jti);
 
     const sessionId = randomUUID();
     const payload = {
