@@ -58,7 +58,9 @@ export class AuthService {
     const tokenRedis = await this.sessionStore.get(sub, jti);
 
     if (!tokenRedis) {
-      throw new UnauthorizedError("Session expired");
+      await this.sessionStore.deleteAll(sub);
+
+      throw new UnauthorizedError("Refresh token reuse detected");
     }
 
     if (tokenHashed !== tokenRedis) {

@@ -1,4 +1,5 @@
 import type { Redis } from "ioredis";
+import { logger } from "../../shared/logger/logger.js";
 
 export interface SessionStore {
   save(
@@ -10,9 +11,11 @@ export interface SessionStore {
 
   get(userId: string, sessionId: string): Promise<string | null>;
 
+  exist(userId: string, sessionId: string): Promise<number>;
+
   delete(userId: string, sessionId: string): Promise<void>;
 
-  exist(userId: string, sessionId: string): Promise<number>;
+  deleteAll(userId: string): Promise<void>;
 }
 
 export class RedisSessionStore implements SessionStore {
@@ -41,5 +44,16 @@ export class RedisSessionStore implements SessionStore {
 
   async delete(userId: string, sessionId: string) {
     await this.redis.del(this.key(userId, sessionId));
+  }
+
+  async deleteAll(userId: string) {
+    const pattern = `rt:${userId}:*`;
+
+    const keys = await this.redis.keys(pattern);
+
+    if (keys.length) {
+      logger.info({ del: keys }, "TEST: DELETING ALL");
+      await this.redis.del(keys);
+    }
   }
 }
