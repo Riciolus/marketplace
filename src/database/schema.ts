@@ -4,11 +4,13 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
   uuid,
   varchar,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -93,5 +95,50 @@ export const productImages = pgTable(
   },
   (table) => ({
     productIdx: index("product_images_product_idx").on(table.productId),
+  })
+);
+
+export const categories = pgTable(
+  "categories",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    name: text("name").notNull().unique(),
+
+    slug: varchar("slug", { length: 255 }).notNull().unique(),
+
+    parentId: uuid("parent_id").references((): AnyPgColumn => categories.id, {
+      onDelete: "set null",
+    }),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    parentIdx: index("categories_parent_idx").on(table.parentId),
+
+    parentNameUnique: uniqueIndex("categories_parent_name_unique").on(
+      table.parentId,
+      table.name
+    ),
+  })
+);
+
+export const productCategories = pgTable(
+  "product_categories",
+  {
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.productId, table.categoryId],
+    }),
+
+    categoryIdx: index("product_categories_category_idx").on(table.categoryId),
   })
 );
