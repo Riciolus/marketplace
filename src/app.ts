@@ -6,6 +6,7 @@ import { ZodError } from "zod";
 import { buildContainer } from "./bootstrap/container.js";
 import { authRoutes } from "./modules/auth/auth.route.js";
 import fastifyCookie from "@fastify/cookie";
+import { productRoutes } from "./modules/products/product.routes.js";
 
 export const app = Fastify({ logger: loggerConfig });
 
@@ -25,6 +26,17 @@ app.register(
     await authRoutes(instance, container.auth.controller, container.auth.guard);
   },
   { prefix: "/auth" }
+);
+
+app.register(
+  async (instance) => {
+    await productRoutes(
+      instance,
+      container.product.controller,
+      container.auth.guard
+    );
+  },
+  { prefix: "/products" }
 );
 
 app.setErrorHandler(function (error, request, reply) {
