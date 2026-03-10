@@ -11,10 +11,20 @@ export class ProductRepository {
   }) {
     const values: any[] = [];
     const conditions: string[] = [];
+    let categoryJoin = "";
+
+    if (params.categorySlug) {
+      categoryJoin = `
+      INNER JOIN product_categories pc ON pc.product_id = p.id
+      INNER JOIN categories c ON pc.category_id = c.id
+    `;
+    }
+
+    conditions.push(`p.status = 'active'`);
 
     if (params.sellerId) {
       values.push(params.sellerId);
-      conditions.push(`u.id = $${values.length}`);
+      conditions.push(`p.seller_id = $${values.length}`);
     }
 
     if (params.categorySlug) {
@@ -30,31 +40,21 @@ export class ProductRepository {
 
     const data = await this.executor.query(
       `
-      SELECT 
+      SELECT DISTINCT
         p.id as product_id, 
         p.seller_id, 
         p.title, 
-        p.description, 
         p.slug, 
-        p.status, 
-        p.created_at,
-        u.email,
-        pv.id AS variant_id,
-        pv.sku,
-        pv.price,
-        pv.stock,
-        pv.attributes
+        p.status
 
       FROM products AS p
 
-      INNER JOIN users AS u ON p.seller_id = u.id
-      INNER JOIN product_variants AS pv ON p.id = pv.product_id
-      INNER JOIN product_categories AS pc ON pc.product_id = p.id
-      INNER JOIN categories AS c ON pc.category_id = c.id
+      ${categoryJoin}
 
       ${whereClause}
       
-      LIMIT $${values.length - 1} OFFSET $${values.length}
+      LIMIT $${values.length - 1} 
+      OFFSET $${values.length}
       `,
       values
     );

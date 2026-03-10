@@ -25,33 +25,8 @@ export class ProductService {
       ...(query.sellerId && { sellerId: query.sellerId }),
     });
 
-    const map = new Map();
-
-    for (const row of products) {
-      if (!map.has(row.product_id)) {
-        map.set(row.product_id, {
-          id: row.product_id,
-          title: row.title,
-          description: row.description,
-          slug: row.slug,
-          seller: {
-            id: row.seller_id,
-            email: row.email,
-          },
-          variants: [],
-        });
-      }
-
-      map.get(row.product_id).variants.push({
-        sku: row.sku,
-        price: row.price,
-        stock: row.stock,
-        attributes: row.attributes,
-      });
-    }
-
     return {
-      data: Array.from(map.values()),
+      data: products,
       meta: {
         page,
         limit,
