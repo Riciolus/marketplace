@@ -7,9 +7,9 @@ import type { VariantRepository } from "./variants/variant.repository.js";
 export class ProductService {
   constructor(
     private productRepo: ProductRepository,
-    variantRepo: VariantRepository,
-    categoryRepo: CategoryRepository,
-    imageRepo: ImageRepository
+    private variantRepo: VariantRepository,
+    private categoryRepo: CategoryRepository,
+    private imageRepo: ImageRepository
   ) {}
 
   async getProducts(query: GetProductsQuery) {
@@ -37,6 +37,13 @@ export class ProductService {
         id: row.seller_id,
         name: row.seller_name,
       },
+
+      images: row.url
+        ? {
+            url: row.url,
+            position: row.position,
+          }
+        : null,
     }));
 
     return {

@@ -47,15 +47,22 @@ export class ProductRepository {
         p.title, 
         p.slug, 
         p.status,
+        pi.url,
         MIN(pv.price) AS min_price,
         MAX(pv.price) AS max_price
-
-      
 
       FROM products AS p
 
       INNER JOIN users AS u ON u.id = p.seller_id 
       INNER JOIN product_variants AS pv ON pv.product_id = p.id 
+
+      LEFT JOIN LATERAL (
+        SELECT url
+        FROM product_images
+        WHERE product_id = p.id
+        ORDER BY position ASC
+        LIMIT 1
+      ) pi ON true
 
       ${categoryJoin}
 
@@ -67,6 +74,7 @@ export class ProductRepository {
         p.title,
         p.slug,
         p.status,
+        pi.url,
         u.name
       
       LIMIT $${values.length - 1} 
