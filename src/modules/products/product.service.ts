@@ -1,16 +1,9 @@
-import type { CategoryRepository } from "./categories/category.repository.js";
-import type { ImageRepository } from "./images/image.repository.js";
+import { NotFoundError } from "../../shared/errors/AppError.js";
 import type { ProductRepository } from "./product.repository.js";
 import type { GetProductsQuery } from "./product.schema.js";
-import type { VariantRepository } from "./variants/variant.repository.js";
 
 export class ProductService {
-  constructor(
-    private productRepo: ProductRepository,
-    private variantRepo: VariantRepository,
-    private categoryRepo: CategoryRepository,
-    private imageRepo: ImageRepository
-  ) {}
+  constructor(private productRepo: ProductRepository) {}
 
   async getProducts(query: GetProductsQuery) {
     const page = query.page ?? 1;
@@ -52,6 +45,36 @@ export class ProductService {
         page,
         limit,
       },
+    };
+  }
+
+  async getProductBySlug(slug: string) {
+    const product = await this.productRepo.findBySlug(slug);
+
+    if (!product) {
+      throw new NotFoundError("Product not found");
+    }
+
+    const [variants, images, categories] = await Promise.all([
+      this.productRepo.findVariants(product.id),
+      this.productRepo.findImages(product.id),
+      this.productRepo.findCategories(product.id),
+    ]);
+
+    return {
+      id: product.id,
+      title: product.title,
+      slug: product.slug,
+      description: product.description,
+
+      seller: {
+        id: product.seller_id,
+        name: product.seller_name,
+      },
+
+      variants,
+      images,
+      categories,
     };
   }
 }

@@ -6,12 +6,9 @@ import { RedisSessionStore } from "../infrastructure/redis/redis-session.store.j
 import { redis } from "../infrastructure/redis/redis.client.js";
 import { AuthController } from "../modules/auth/auth.controller.js";
 import { AuthService } from "../modules/auth/auth.service.js";
-import { CategoryRepository } from "../modules/products/categories/category.repository.js";
-import { ImageRepository } from "../modules/products/images/image.repository.js";
 import { ProductController } from "../modules/products/product.controller.js";
 import { ProductRepository } from "../modules/products/product.repository.js";
 import { ProductService } from "../modules/products/product.service.js";
-import { VariantRepository } from "../modules/products/variants/variant.repository.js";
 import { UserController } from "../modules/user/user.controller.js";
 import { UserRepository } from "../modules/user/user.repository.js";
 import { UserService } from "../modules/user/user.service.js";
@@ -32,15 +29,7 @@ export function buildContainer() {
   const authController = new AuthController(authService);
 
   const productRepository = new ProductRepository(executor);
-  const variantRepository = new VariantRepository(executor);
-  const categoryRepository = new CategoryRepository(executor);
-  const imageRepository = new ImageRepository(executor);
-  const productService = new ProductService(
-    productRepository,
-    variantRepository,
-    categoryRepository,
-    imageRepository
-  );
+  const productService = new ProductService(productRepository);
   const productController = new ProductController(productService);
 
   return {

@@ -1,3 +1,4 @@
+import { exec } from "node:child_process";
 import type { PoolExecutor } from "../../infrastructure/database/executor.js";
 
 export class ProductRepository {
@@ -84,5 +85,85 @@ export class ProductRepository {
     );
 
     return data.rows;
+  }
+
+  async findBySlug(slug: string) {
+    const product = await this.executor.query(
+      `
+      SELECT 
+      p.id, 
+      p.title, 
+      p.slug, 
+      p.description, 
+      p.seller_id,
+      u.name
+
+      FROM products AS p
+
+      INNER JOIN users AS u ON u.id = p.seller_id
+
+      WHERE p.slug = $1
+      `,
+      [slug]
+    );
+
+    return product.rows[0];
+  }
+
+  async findVariants(productId: string) {
+    const variants = await this.executor.query(
+      `
+      SELECT
+      pv.sku,
+      pv.price,
+      pv.stock,
+      pv.attributes
+
+      FROM product_variants AS pv
+
+      WHERE pv.product_id = $1
+      `,
+      [productId]
+    );
+
+    return variants.rows;
+  }
+
+  async findImages(productId: string) {
+    const images = await this.executor.query(
+      `
+      SELECT
+      pi.url,
+      pi.position
+
+      FROM product_images AS pi
+
+      WHERE pi.product_id = $1
+      `,
+      [productId]
+    );
+
+    return images.rows;
+  }
+
+  async findCategories(productId: string) {
+    const categories = await this.executor.query(
+      `
+      SELECT
+      pc.category_id,
+      c.name,
+      c.slug,
+      c.parent_id
+
+      FROM product_categories AS pc
+
+      INNER JOIN categories AS c ON c.id = pc.category_id
+
+      WHERE pc.product_id = $1
+      `,
+      [productId]
+    );
+
+    return categories.rows;
   }
 }

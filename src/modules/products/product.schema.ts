@@ -10,4 +10,8 @@ export const productListSchema = z.object({
   sellerId: z.string().uuid().optional(),
 });
 
+export const productSlugParamSchema = z.object({
+  slug: z.string(),
+});
+
 export type GetProductsQuery = z.infer<typeof productListSchema>;

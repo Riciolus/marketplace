@@ -7,4 +7,6 @@ export async function productRoutes(
   authGuard: preHandlerHookHandler
 ) {
   app.get("/", controller.getProducts.bind(controller));
+
+  app.get("/:slug", controller.getProductBySlug.bind(controller));
 }
