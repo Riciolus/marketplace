@@ -25,8 +25,22 @@ export class ProductService {
       ...(query.sellerId && { sellerId: query.sellerId }),
     });
 
+    const transformedProducts = products.map((row) => ({
+      id: row.product_id,
+      title: row.title,
+      slug: row.slug,
+      status: row.status,
+      minPrice: row.min_price,
+      maxPrice: row.max_price,
+
+      seller: {
+        id: row.seller_id,
+        name: row.seller_name,
+      },
+    }));
+
     return {
-      data: products,
+      data: transformedProducts,
       meta: {
         page,
         limit,

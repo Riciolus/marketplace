@@ -42,7 +42,8 @@ export class ProductRepository {
       `
       SELECT
         p.id as product_id, 
-        p.seller_id, 
+        p.seller_id,
+        u.name as seller_name, 
         p.title, 
         p.slug, 
         p.status,
@@ -53,6 +54,7 @@ export class ProductRepository {
 
       FROM products AS p
 
+      INNER JOIN users AS u ON u.id = p.seller_id 
       INNER JOIN product_variants AS pv ON pv.product_id = p.id 
 
       ${categoryJoin}
@@ -64,7 +66,8 @@ export class ProductRepository {
         p.seller_id,
         p.title,
         p.slug,
-        p.status
+        p.status,
+        u.name
       
       LIMIT $${values.length - 1} 
       OFFSET $${values.length}

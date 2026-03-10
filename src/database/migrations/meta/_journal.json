@@ -15,6 +15,13 @@
       "when": 1773038477201,
       "tag": "0001_yummy_black_panther",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773121996730,
+      "tag": "0002_nosy_satana",
+      "breakpoints": true
     }
   ]
 }
