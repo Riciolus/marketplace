@@ -40,18 +40,31 @@ export class ProductRepository {
 
     const data = await this.executor.query(
       `
-      SELECT DISTINCT
+      SELECT
         p.id as product_id, 
         p.seller_id, 
         p.title, 
         p.slug, 
-        p.status
+        p.status,
+        MIN(pv.price) AS min_price,
+        MAX(pv.price) AS max_price
+
+      
 
       FROM products AS p
+
+      INNER JOIN product_variants AS pv ON pv.product_id = p.id 
 
       ${categoryJoin}
 
       ${whereClause}
+
+      GROUP BY 
+        p.id,
+        p.seller_id,
+        p.title,
+        p.slug,
+        p.status
       
       LIMIT $${values.length - 1} 
       OFFSET $${values.length}
