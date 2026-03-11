@@ -1,9 +1,12 @@
+import { randomUUID } from "crypto";
 import { NotFoundError } from "../../shared/errors/AppError.js";
 import type { ProductRepository } from "./product.repository.js";
-import type { GetProductsQuery } from "./product.schema.js";
+import type { CreateProductPayload, GetProductsQuery } from "./product.schema.js";
+import { generateSlug } from "../../shared/utils/generate-slug.js";
+import { withTransaction } from "../../infrastructure/database/transaction.js";
 
 export class ProductService {
-  constructor(private productRepo: ProductRepository) {}
+  constructor(private repo: ProductRepository) {}
 
   async getProducts(query: GetProductsQuery) {
     const page = query.page ?? 1;
@@ -11,7 +14,7 @@ export class ProductService {
 
     const offset = (page - 1) * limit;
 
-    const products = await this.productRepo.findProducts({
+    const products = await this.repo.findProducts({
       limit,
       offset,
       ...(query.category && { categorySlug: query.category }),
@@ -49,16 +52,16 @@ export class ProductService {
   }
 
   async getProductBySlug(slug: string) {
-    const product = await this.productRepo.findBySlug(slug);
+    const product = await this.repo.findBySlug(slug);
 
     if (!product) {
       throw new NotFoundError("Product not found");
     }
 
     const [variants, images, categories] = await Promise.all([
-      this.productRepo.findVariants(product.id),
-      this.productRepo.findImages(product.id),
-      this.productRepo.findCategories(product.id),
+      this.repo.findVariants(product.id),
+      this.repo.findImages(product.id),
+      this.repo.findCategories(product.id),
     ]);
 
     return {
@@ -76,5 +79,47 @@ export class ProductService {
       images,
       categories,
     };
+  }
+
+  async createProduct(userId: string, payload: CreateProductPayload) {
+    return withTransaction(async (executor) => {
+      let slug = generateSlug(payload.title);
+
+      const slugExist = await this.repo.findBySlug(slug, executor);
+
+      if (slugExist) {
+        slug = `${slug}-${Date.now()}`;
+      }
+
+      const product = await this.repo.createProduct(
+        {
+          sellerId: userId,
+          title: payload.title,
+          description: payload.description,
+          slug,
+        },
+        executor
+      );
+
+      if (!product) {
+        throw new Error("Failed to create product");
+      }
+
+      await this.repo.createVariants(product.id, payload.variants, executor);
+
+      if (payload.images) {
+        await this.repo.createImages(product.id, payload.images, executor);
+      }
+
+      const categories = await this.repo.findCategoryIdsBySlug(
+        payload.categories,
+        executor
+      );
+      const categoryIds: string[] = categories.map((c) => c.id);
+
+      await this.repo.createCategories(product.id, categoryIds, executor);
+
+      return product;
+    });
   }
 }

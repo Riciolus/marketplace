@@ -9,4 +9,10 @@ export async function productRoutes(
   app.get("/", controller.getProducts.bind(controller));
 
   app.get("/:slug", controller.getProductBySlug.bind(controller));
+
+  app.post(
+    "/",
+    { preHandler: [authGuard] },
+    controller.createProduct.bind(controller)
+  );
 }

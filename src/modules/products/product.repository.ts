@@ -1,5 +1,5 @@
-import { exec } from "node:child_process";
 import type { PoolExecutor } from "../../infrastructure/database/executor.js";
+import type { Categories, Images, Variants } from "./product.schema.js";
 
 export class ProductRepository {
   constructor(private executor: PoolExecutor) {}
@@ -87,7 +87,7 @@ export class ProductRepository {
     return data.rows;
   }
 
-  async findBySlug(slug: string) {
+  async findBySlug(slug: string, executor: PoolExecutor = this.executor) {
     const product = await this.executor.query(
       `
       SELECT 
@@ -165,5 +165,102 @@ export class ProductRepository {
     );
 
     return categories.rows;
+  }
+
+  async createProduct(
+    payload: {
+      sellerId: string;
+      title: string;
+      description: string;
+      slug: string;
+    },
+    executor: PoolExecutor
+  ) {
+    const { sellerId, title, description, slug } = payload;
+
+    const product = await executor.query(
+      `
+    INSERT INTO products (seller_id, title, description, slug)
+    VALUES ($1,$2,$3,$4)
+    RETURNING id, slug
+    `,
+      [sellerId, title, description, slug]
+    );
+
+    return product.rows[0];
+  }
+
+  async createVariants(
+    productId: string,
+    variants: Variants[],
+    executor: PoolExecutor
+  ) {
+    const values: any[] = [];
+    const placeholders: string[] = [];
+
+    variants.forEach((v, i) => {
+      const base = i * 4;
+
+      placeholders.push(
+        `($1, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`
+      );
+
+      values.push(v.sku, v.price, v.stock, v.attributes ?? {});
+    });
+
+    await executor.query(
+      `
+    INSERT INTO product_variants
+    (product_id, sku, price, stock, attributes)
+    VALUES ${placeholders.join(",")}
+    `,
+      [productId, ...values]
+    );
+  }
+
+  async createImages(productId: string, images: Images, executor: PoolExecutor) {
+    for (const image of images!) {
+      await executor.query(
+        `
+      INSERT INTO product_images
+      (product_id, url, position)
+      VALUES ($1, $2, $3)
+      `,
+        [productId, image.url, image.position]
+      );
+    }
+  }
+
+  async findCategoryIdsBySlug(
+    slug: string[],
+    executor: PoolExecutor = this.executor
+  ) {
+    const ids = await this.executor.query(
+      `
+      SELECT id
+      FROM categories
+      WHERE slug = ANY($1)
+      `,
+      [slug]
+    );
+
+    return ids.rows;
+  }
+
+  async createCategories(
+    productId: string,
+    categoryIds: string[],
+    executor: PoolExecutor
+  ) {
+    for (const id of categoryIds) {
+      await executor.query(
+        `
+        INSERT INTO product_categories
+        (product_id, category_id)
+        VALUES ($1, $2)
+      `,
+        [productId, id]
+      );
+    }
   }
 }
