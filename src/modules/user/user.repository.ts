@@ -44,13 +44,13 @@ export class UserRepository {
     return result.rows[0] ?? null;
   }
 
-  async create(email: string, passwordHash: string) {
+  async create(email: string, passwordHash: string, name: string) {
     const result = await this.executor.query<UserRow>(
-      `INSERT INTO users (email, password_hash)
-       VALUES ($1, $2)
-       RETURNING id, email, role, created_at
+      `INSERT INTO users (email, password_hash, name)
+       VALUES ($1, $2, $3)
+       RETURNING id, email, name, role, created_at
       `,
-      [email, passwordHash],
+      [email, passwordHash, name],
       "user.create"
     );
 

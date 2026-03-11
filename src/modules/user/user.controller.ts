@@ -20,9 +20,9 @@ export class UserController {
   }
 
   async createUser(request: FastifyRequest, reply: FastifyReply) {
-    const { email, password } = createUserSchema.parse(request.body);
+    const { email, password, name } = createUserSchema.parse(request.body);
 
-    const user = await this.service.createUser({ email, password });
+    const user = await this.service.createUser({ email, password, name });
 
     reply.status(201).send({ success: true, data: user });
   }

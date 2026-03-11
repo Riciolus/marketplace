@@ -20,7 +20,7 @@ export class UserService {
     return user;
   }
 
-  async createUser({ email, password }: CreateUserInput) {
+  async createUser({ email, password, name }: CreateUserInput) {
     const existing = await this.repo.findByEmail(email);
 
     if (existing) {
@@ -29,6 +29,6 @@ export class UserService {
 
     const passwordHash = await hash(password, 12);
 
-    return this.repo.create(email, passwordHash);
+    return this.repo.create(email, passwordHash, name);
   }
 }

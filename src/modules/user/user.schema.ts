@@ -7,6 +7,7 @@ export const userIdParamSchema = z.object({
 export const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+  name: z.string().max(30),
 });
 
 export const userResponseSchema = z.object({

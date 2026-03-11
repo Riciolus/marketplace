@@ -5,6 +5,7 @@ export type UserRole = "user" | "admin";
 export type UserRow = {
   id: string;
   email: string;
+  name: string;
   role: UserRole;
   created_at: Date;
 };
@@ -12,6 +13,7 @@ export type UserRow = {
 export type AuthUserRow = {
   id: string;
   email: string;
+  name: string;
   role: UserRole;
   created_at: Date;
   password_hash: string;
