@@ -1,11 +1,14 @@
-import { randomUUID } from "crypto";
 import {
   ForbiddenError,
   NotFoundError,
   UnauthorizedError,
 } from "../../shared/errors/AppError.js";
 import type { ProductRepository } from "./product.repository.js";
-import type { CreateProductPayload, GetProductsQuery } from "./product.schema.js";
+import type {
+  CreateProductPayload,
+  GetProductsQuery,
+  UpdateProductPayload,
+} from "./product.schema.js";
 import { generateSlug } from "../../shared/utils/generate-slug.js";
 import { withTransaction } from "../../infrastructure/database/transaction.js";
 
@@ -115,11 +118,10 @@ export class ProductService {
         await this.repo.createImages(product.id, payload.images, executor);
       }
 
-      const categories = await this.repo.findCategoryIdsBySlug(
+      const categoryIds = await this.repo.findCategoryIdsBySlug(
         payload.categories,
         executor
       );
-      const categoryIds: string[] = categories.map((c) => c.id);
 
       await this.repo.createCategories(product.id, categoryIds, executor);
 
@@ -144,5 +146,59 @@ export class ProductService {
 
     // havent implement order yet, disabled and skipped for now
     // const hasOrders = await this.repo.existsInOrderItems(productId);
+  }
+
+  async updateProduct(
+    userId: string,
+    productId: string,
+    payload: UpdateProductPayload
+  ) {
+    await withTransaction(async (executor) => {
+      const productSellerId = await this.repo.findSellerIdById(productId, executor);
+
+      if (!productSellerId) {
+        throw new NotFoundError("Product not found");
+      }
+
+      if (productSellerId !== userId) {
+        throw new UnauthorizedError("Not your product");
+      }
+
+      if (payload.title || payload.description) {
+        let slug: string | undefined;
+
+        if (payload.title) {
+          const baseSlug = generateSlug(payload.title);
+
+          const slugExist = await this.repo.findBySlug(baseSlug, executor);
+
+          slug = slugExist ? `${baseSlug}-${Date.now()}` : baseSlug;
+        }
+
+        await this.repo.updateProduct({
+          productId,
+          payload,
+          slug,
+          executor,
+        });
+      }
+
+      if (payload.categories) {
+        await this.repo.syncProductCategories(
+          productId,
+          payload.categories,
+          executor
+        );
+      }
+
+      if (payload.variants) {
+        await this.repo.syncProductVariants(productId, payload.variants, executor);
+      }
+
+      if (payload.images) {
+        await this.repo.syncProductImages(productId, payload.images, executor);
+      }
+    });
+    return { userId, productId };
   }
 }

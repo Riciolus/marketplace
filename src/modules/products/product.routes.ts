@@ -16,6 +16,12 @@ export async function productRoutes(
     controller.createProduct.bind(controller)
   );
 
+  app.patch(
+    "/:id",
+    { preHandler: [authGuard] },
+    controller.updateProduct.bind(controller)
+  );
+
   app.delete(
     "/:id",
     { preHandler: [authGuard] },

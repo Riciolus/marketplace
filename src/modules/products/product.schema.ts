@@ -1,5 +1,19 @@
 import z from "zod";
 
+export const variantSchema = z.object({
+  id: z.string().uuid().optional(), // important for update
+  sku: z.string(),
+  price: z.number().int().positive(),
+  stock: z.number().int().nonnegative(),
+  attributes: z.record(z.string(), z.string()).optional(),
+});
+
+export const imageSchema = z.object({
+  id: z.string().uuid().optional(),
+  url: z.string().url(),
+  position: z.number().int().nonnegative(),
+});
+
 export const productListSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
 
@@ -9,6 +23,7 @@ export const productListSchema = z.object({
 
   sellerId: z.string().uuid().optional(),
 });
+export type GetProductsQuery = z.infer<typeof productListSchema>;
 
 export const productSlugParamSchema = z.object({
   slug: z.string(),
@@ -20,34 +35,21 @@ export const createProductSchema = z.object({
 
   categories: z.array(z.string()).min(1),
 
-  variants: z
-    .array(
-      z.object({
-        sku: z.string(),
-        price: z.number().int().positive(),
-        stock: z.number().int().nonnegative(),
-        attributes: z.record(z.string(), z.string()).optional(),
-      })
-    )
-    .min(1),
+  variants: z.array(variantSchema).min(1),
 
-  images: z
-    .array(
-      z.object({
-        url: z.string().url(),
-        position: z.number().int().nonnegative(),
-      })
-    )
-    .optional(),
+  images: z.array(imageSchema).optional(),
 });
-
 export type CreateProductPayload = z.infer<typeof createProductSchema>;
-export type Variants = CreateProductPayload["variants"][number];
-export type Categories = CreateProductPayload["categories"];
-export type Images = CreateProductPayload["images"];
-
-export type GetProductsQuery = z.infer<typeof productListSchema>;
+export type VariantInput = z.infer<typeof variantSchema>;
+export type CategoriesInput = CreateProductPayload["categories"];
+export type ImageInput = z.infer<typeof imageSchema>;
+export const updateProductSchema = createProductSchema.partial();
+export type UpdateProductPayload = z.infer<typeof updateProductSchema>;
 
 export const deleteProductParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const updateProductParamsSchema = z.object({
   id: z.string().uuid(),
 });

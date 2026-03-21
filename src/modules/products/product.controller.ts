@@ -5,6 +5,8 @@ import {
   deleteProductParamSchema,
   productListSchema,
   productSlugParamSchema,
+  updateProductParamsSchema,
+  updateProductSchema,
 } from "./product.schema.js";
 
 export class ProductController {
@@ -31,9 +33,21 @@ export class ProductController {
 
     const payload = createProductSchema.parse(request.body);
 
-    const created = await this.service.createProduct(userId, payload);
+    const product = await this.service.createProduct(userId, payload);
 
-    reply.send({ success: true, data: created });
+    reply.send({ success: true, data: product });
+  }
+
+  async updateProduct(request: FastifyRequest, reply: FastifyReply) {
+    const userId = request.user.userId;
+    // as productId
+    const { id } = updateProductParamsSchema.parse(request.params);
+
+    const payload = updateProductSchema.parse(request.body);
+
+    const product = await this.service.updateProduct(userId, id, payload);
+
+    reply.send({ success: true, data: product });
   }
 
   async deleteProduct(request: FastifyRequest, reply: FastifyReply) {
