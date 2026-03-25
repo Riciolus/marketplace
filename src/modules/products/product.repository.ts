@@ -110,6 +110,29 @@ export class ProductRepository {
     return product.rows[0];
   }
 
+  async findById(productId: string, executor: PoolExecutor = this.executor) {
+    const product = await executor.query(
+      `
+      SELECT 
+      p.id, 
+      p.title, 
+      p.slug, 
+      p.description, 
+      p.seller_id,
+      u.name
+
+      FROM products AS p
+
+      INNER JOIN users AS u ON u.id = p.seller_id
+
+      WHERE p.id = $1
+      `,
+      [productId]
+    );
+
+    return product.rows[0];
+  }
+
   async findVariants(productId: string) {
     const variants = await this.executor.query(
       `
@@ -190,6 +213,18 @@ export class ProductRepository {
     return product.rows[0];
   }
 
+  async deleteProduct(productId: string, executor: PoolExecutor = this.executor) {
+    const deleted = await executor.query(
+      `
+      DELETE FROM products
+      WHERE id = $1
+      `,
+      [productId]
+    );
+
+    return deleted.rows[0];
+  }
+
   async createVariants(
     productId: string,
     variants: Variants[],
@@ -263,4 +298,13 @@ export class ProductRepository {
       );
     }
   }
+
+  // havent implement order yett, disabled
+  // async existInOrderItems(productId: string) {
+  //   const data = this.executor.query(`
+  //     SELECT
+
+  //     FROM
+  //     `);
+  // }
 }

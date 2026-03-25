@@ -47,3 +47,7 @@ export type Categories = CreateProductPayload["categories"];
 export type Images = CreateProductPayload["images"];
 
 export type GetProductsQuery = z.infer<typeof productListSchema>;
+
+export const deleteProductParamSchema = z.object({
+  id: z.string().uuid(),
+});

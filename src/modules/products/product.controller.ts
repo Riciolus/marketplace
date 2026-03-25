@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import type { ProductService } from "./product.service.js";
 import {
   createProductSchema,
+  deleteProductParamSchema,
   productListSchema,
   productSlugParamSchema,
 } from "./product.schema.js";
@@ -33,5 +34,15 @@ export class ProductController {
     const created = await this.service.createProduct(userId, payload);
 
     reply.send({ success: true, data: created });
+  }
+
+  async deleteProduct(request: FastifyRequest, reply: FastifyReply) {
+    const userId = request.user.userId;
+    // productId
+    const { id } = deleteProductParamSchema.parse(request.params);
+
+    await this.service.deleteProduct(userId, id);
+
+    reply.send({ success: true });
   }
 }

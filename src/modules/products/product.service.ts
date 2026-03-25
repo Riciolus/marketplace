@@ -1,5 +1,9 @@
 import { randomUUID } from "crypto";
-import { NotFoundError } from "../../shared/errors/AppError.js";
+import {
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../../shared/errors/AppError.js";
 import type { ProductRepository } from "./product.repository.js";
 import type { CreateProductPayload, GetProductsQuery } from "./product.schema.js";
 import { generateSlug } from "../../shared/utils/generate-slug.js";
@@ -121,5 +125,24 @@ export class ProductService {
 
       return product;
     });
+  }
+
+  async deleteProduct(userId: string, productId: string) {
+    const product = await this.repo.findById(productId);
+
+    if (!product) {
+      throw new NotFoundError("Product not found");
+    }
+
+    if (product.seller_id !== userId) {
+      throw new ForbiddenError("Not your product");
+    }
+
+    await withTransaction(async (executor) => {
+      await this.repo.deleteProduct(product.id, executor);
+    });
+
+    // havent implement order yet, disabled and skipped for now
+    // const hasOrders = await this.repo.existsInOrderItems(productId);
   }
 }
