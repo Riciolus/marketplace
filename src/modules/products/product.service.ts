@@ -154,6 +154,8 @@ export class ProductService {
     payload: UpdateProductPayload
   ) {
     await withTransaction(async (executor) => {
+      await this.repo.lockProductById(productId, executor);
+
       const productSellerId = await this.repo.findSellerIdById(productId, executor);
 
       if (!productSellerId) {
