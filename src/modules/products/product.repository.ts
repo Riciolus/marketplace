@@ -1,4 +1,3 @@
-import type { QueryResult, QueryResultRow } from "pg";
 import type { PoolExecutor } from "../../infrastructure/database/executor.js";
 import type {
   CategoriesInput,
@@ -6,13 +5,14 @@ import type {
   UpdateProductPayload,
   VariantInput,
 } from "./product.schema.js";
-import { logger } from "../../shared/logger/logger.js";
 import { NotFoundError } from "../../shared/errors/AppError.js";
-import { randomUUID } from "crypto";
 
 export class ProductRepository {
   constructor(private executor: PoolExecutor) {}
 
+  // ========================
+  // PUBLIC PRODUCT LOGIC
+  // ========================
   async findProducts(params: {
     limit: number;
     offset: number;
@@ -97,7 +97,7 @@ export class ProductRepository {
   }
 
   async findBySlug(slug: string, executor: PoolExecutor = this.executor) {
-    const product = await this.executor.query(
+    const product = await executor.query(
       `
       SELECT 
       p.id, 
@@ -154,63 +154,47 @@ export class ProductRepository {
     return result.rows[0]?.seller_id;
   }
 
-  async findVariants(productId: string, executor: PoolExecutor = this.executor) {
-    const variants = await executor.query(
-      `
-      SELECT
-      pv.id,
-      pv.sku,
-      pv.price,
-      pv.stock,
-      pv.attributes
+  async updateProduct({
+    productId,
+    payload,
+    slug,
+    executor,
+  }: {
+    productId: string;
+    payload: UpdateProductPayload;
+    slug?: string | undefined;
+    executor: PoolExecutor;
+  }) {
+    let fields: string[] = [];
+    let values: any[] = [];
 
-      FROM product_variants AS pv
+    if (payload.title) {
+      values.push(payload.title);
+      fields.push(`title = $${values.length}`);
+    }
 
-      WHERE pv.product_id = $1
+    if (slug) {
+      values.push(slug);
+      fields.push(`slug = $${values.length}`);
+    }
+
+    if (payload.description) {
+      values.push(payload.description);
+      fields.push(`description = $${values.length}`);
+    }
+
+    values.push(productId);
+
+    const setClause = fields.length ? `SET ${fields.join(", ")}` : "";
+
+    await executor.query(
+      ` 
+      UPDATE products
+      ${setClause}
+      WHERE id = $${values.length}
       `,
-      [productId]
+      values
     );
-
-    return variants.rows;
-  }
-
-  async findImages(productId: string, executor: PoolExecutor = this.executor) {
-    const images = await executor.query(
-      `
-      SELECT
-      pi.id,
-      pi.url,
-      pi.position
-
-      FROM product_images AS pi
-
-      WHERE pi.product_id = $1
-      `,
-      [productId]
-    );
-
-    return images.rows;
-  }
-
-  async findCategories(productId: string, executor: PoolExecutor = this.executor) {
-    const categories = await executor.query(
-      `
-      SELECT
-      pc.category_id,
-      c.name,
-      c.slug,
-      c.parent_id
-
-      FROM product_categories AS pc
-
-      INNER JOIN categories AS c ON c.id = pc.category_id
-
-      WHERE pc.product_id = $1
-      `,
-      [productId]
-    );
-
-    return categories.rows;
   }
 
   async createProduct(
@@ -246,6 +230,29 @@ export class ProductRepository {
     );
 
     return deleted.rows[0];
+  }
+
+  // ========================
+  // VARIANT LOGIC
+  // ========================
+  async findVariants(productId: string, executor: PoolExecutor = this.executor) {
+    const variants = await executor.query(
+      `
+      SELECT
+      pv.id,
+      pv.sku,
+      pv.price,
+      pv.stock,
+      pv.attributes
+
+      FROM product_variants AS pv
+
+      WHERE pv.product_id = $1
+      `,
+      [productId]
+    );
+
+    return variants.rows;
   }
 
   async createVariants(
@@ -346,178 +353,6 @@ export class ProductRepository {
     );
   }
 
-  async createImages(
-    productId: string,
-    images: ImageInput[],
-    executor: PoolExecutor = this.executor
-  ) {
-    for (const image of images) {
-      await executor.query(
-        `
-      INSERT INTO product_images
-      (product_id, url, position)
-      VALUES ($1, $2, $3)
-      `,
-        [productId, image.url, image.position]
-      );
-    }
-  }
-
-  async updateImages(
-    productId: string,
-    images: ImageInput[],
-    executor: PoolExecutor = this.executor
-  ) {
-    for (const img of images) {
-      await executor.query(
-        `
-      UPDATE product_images
-      SET position = $1, url = $2
-      WHERE id = $3
-      AND product_id = $4
-      `,
-        [img.position, img.url, img.id, productId]
-      );
-    }
-  }
-
-  async deleteImages(
-    productId: string,
-    imagesIds: string[],
-    executor: PoolExecutor = this.executor
-  ) {
-    await executor.query(
-      `
-      DELETE FROM product_images
-      WHERE product_id = $1
-      AND id = ANY($2)
-      `,
-      [productId, imagesIds]
-    );
-  }
-
-  async findCategoryIdsBySlug(
-    slug: string[],
-    executor: PoolExecutor = this.executor
-  ) {
-    const ids = await executor.query(
-      `
-      SELECT id
-      FROM categories
-      WHERE slug = ANY($1)
-      `,
-      [slug]
-    );
-
-    return ids.rows.map((row) => row.id);
-  }
-
-  async createCategories(
-    productId: string,
-    categoryIds: string[],
-    executor: PoolExecutor
-  ) {
-    const values: unknown[] = [productId];
-    const placeholders: string[] = [];
-
-    categoryIds.forEach((id, i) => {
-      values.push(id);
-      placeholders.push(`($1, $${i + 2})`);
-    });
-
-    await executor.query(
-      `
-    INSERT INTO product_categories (product_id, category_id)
-    VALUES ${placeholders.join(",")}
-    ON CONFLICT (product_id, category_id) DO NOTHING
-    `,
-      values
-    );
-  }
-
-  async deleteCategories(
-    productId: string,
-    categoryIds: string[],
-    executor: PoolExecutor
-  ) {
-    await executor.query(
-      `
-    DELETE FROM product_categories
-    WHERE product_id = $1
-    AND category_id = ANY($2)
-    `,
-      [productId, categoryIds]
-    );
-  }
-
-  async updateProduct({
-    productId,
-    payload,
-    slug,
-    executor,
-  }: {
-    productId: string;
-    payload: UpdateProductPayload;
-    slug?: string | undefined;
-    executor: PoolExecutor;
-  }) {
-    let fields: string[] = [];
-    let values: any[] = [];
-
-    if (payload.title) {
-      values.push(payload.title);
-      fields.push(`title = $${values.length}`);
-    }
-
-    if (slug) {
-      values.push(slug);
-      fields.push(`slug = $${values.length}`);
-    }
-
-    if (payload.description) {
-      values.push(payload.description);
-      fields.push(`description = $${values.length}`);
-    }
-
-    values.push(productId);
-
-    const setClause = fields.length ? `SET ${fields.join(", ")}` : "";
-
-    await executor.query(
-      ` 
-      UPDATE products
-      ${setClause}
-      WHERE id = $${values.length}
-      `,
-      values
-    );
-  }
-
-  async syncProductCategories(
-    productId: string,
-    inputCategories: CategoriesInput,
-    executor: PoolExecutor
-  ) {
-    const existingCategory = await this.findCategories(productId, executor);
-    const existingCategoryIds = existingCategory.map((ctg) => ctg.id);
-
-    const incomingCategoryIds = await this.findCategoryIdsBySlug(inputCategories);
-
-    if (incomingCategoryIds.length !== inputCategories.length)
-      throw new NotFoundError("Categories not found");
-
-    const existingSet = new Set(existingCategoryIds);
-    const incomingSet = new Set(incomingCategoryIds);
-
-    const deleted = existingCategoryIds.filter((ctg) => !incomingSet.has(ctg));
-    const inserted = Array.from(incomingSet).filter((ctg) => !existingSet.has(ctg));
-
-    if (inserted.length > 0)
-      await this.createCategories(productId, inserted, executor);
-    if (deleted.length > 0)
-      await this.deleteCategories(productId, deleted, executor);
-  }
-
   async syncProductVariants(
     productId: string,
     incomingVariants: VariantInput[],
@@ -577,6 +412,78 @@ export class ProductRepository {
     }
   }
 
+  // ========================
+  // IMAGE LOGIC
+  // =======================
+
+  async findImages(productId: string, executor: PoolExecutor = this.executor) {
+    const images = await executor.query(
+      `
+      SELECT
+      pi.id,
+      pi.url,
+      pi.position
+
+      FROM product_images AS pi
+
+      WHERE pi.product_id = $1
+      `,
+      [productId]
+    );
+
+    return images.rows;
+  }
+
+  async createImages(
+    productId: string,
+    images: ImageInput[],
+    executor: PoolExecutor = this.executor
+  ) {
+    for (const image of images) {
+      await executor.query(
+        `
+      INSERT INTO product_images
+      (product_id, url, position)
+      VALUES ($1, $2, $3)
+      `,
+        [productId, image.url, image.position]
+      );
+    }
+  }
+
+  async updateImages(
+    productId: string,
+    images: ImageInput[],
+    executor: PoolExecutor = this.executor
+  ) {
+    for (const img of images) {
+      await executor.query(
+        `
+      UPDATE product_images
+      SET position = $1, url = $2
+      WHERE id = $3
+      AND product_id = $4
+      `,
+        [img.position, img.url, img.id, productId]
+      );
+    }
+  }
+
+  async deleteImages(
+    productId: string,
+    imagesIds: string[],
+    executor: PoolExecutor = this.executor
+  ) {
+    await executor.query(
+      `
+      DELETE FROM product_images
+      WHERE product_id = $1
+      AND id = ANY($2)
+      `,
+      [productId, imagesIds]
+    );
+  }
+
   async syncProductImages(
     productId: string,
     incomingImages: ImageInput[],
@@ -612,12 +519,115 @@ export class ProductRepository {
     }
   }
 
-  // havent implement order yett, disabled
-  // async existInOrderItems(productId: string) {
-  //   const data = this.executor.query(`
-  //     SELECT
+  // ========================
+  // CATEGORY LOGIC
+  // ======================
+  async findCategories(productId: string, executor: PoolExecutor = this.executor) {
+    const categories = await executor.query(
+      `
+      SELECT
+      pc.category_id,
+      c.name,
+      c.slug,
+      c.parent_id
 
-  //     FROM
-  //     `);
-  // }
+      FROM product_categories AS pc
+
+      INNER JOIN categories AS c ON c.id = pc.category_id
+
+      WHERE pc.product_id = $1
+      `,
+      [productId]
+    );
+
+    return categories.rows;
+  }
+
+  async findCategoryIdsBySlug(
+    slug: string[],
+    executor: PoolExecutor = this.executor
+  ) {
+    const ids = await executor.query(
+      `
+      SELECT id
+      FROM categories
+      WHERE slug = ANY($1)
+      `,
+      [slug]
+    );
+
+    return ids.rows.map((row) => row.id);
+  }
+
+  async createCategories(
+    productId: string,
+    categoryIds: string[],
+    executor: PoolExecutor
+  ) {
+    const values: unknown[] = [productId];
+    const placeholders: string[] = [];
+
+    categoryIds.forEach((id, i) => {
+      values.push(id);
+      placeholders.push(`($1, $${i + 2})`);
+    });
+
+    await executor.query(
+      `
+    INSERT INTO product_categories (product_id, category_id)
+    VALUES ${placeholders.join(",")}
+    ON CONFLICT (product_id, category_id) DO NOTHING
+    `,
+      values
+    );
+  }
+
+  async deleteCategories(
+    productId: string,
+    categoryIds: string[],
+    executor: PoolExecutor
+  ) {
+    await executor.query(
+      `
+    DELETE FROM product_categories
+    WHERE product_id = $1
+    AND category_id = ANY($2)
+    `,
+      [productId, categoryIds]
+    );
+  }
+
+  async syncProductCategories(
+    productId: string,
+    inputCategories: CategoriesInput,
+    executor: PoolExecutor
+  ) {
+    const existingCategory = await this.findCategories(productId, executor);
+    const existingCategoryIds = existingCategory.map((ctg) => ctg.id);
+
+    const incomingCategoryIds = await this.findCategoryIdsBySlug(inputCategories);
+
+    if (incomingCategoryIds.length !== inputCategories.length)
+      throw new NotFoundError("Categories not found");
+
+    const existingSet = new Set(existingCategoryIds);
+    const incomingSet = new Set(incomingCategoryIds);
+
+    const deleted = existingCategoryIds.filter((ctg) => !incomingSet.has(ctg));
+    const inserted = Array.from(incomingSet).filter((ctg) => !existingSet.has(ctg));
+
+    if (inserted.length > 0)
+      await this.createCategories(productId, inserted, executor);
+    if (deleted.length > 0)
+      await this.deleteCategories(productId, deleted, executor);
+  }
 }
+
+// havent implement order yett, disabled
+// async existInOrderItems(productId: string) {
+//   const data = this.executor.query(`
+//     SELECT
+
+//     FROM
+//     `);
+// }
