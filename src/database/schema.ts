@@ -149,3 +149,71 @@ export const productCategories = pgTable(
     categoryIdx: index("product_categories_category_idx").on(table.categoryId),
   })
 );
+
+export const orderStatusEnum = pgEnum("order_status", [
+  "pending",
+  "paid",
+  "cancelled",
+]);
+
+export const orders = pgTable(
+  "orders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    sellerId: uuid("seller_id")
+      .notNull()
+      .references(() => users.id),
+
+    totalPrice: integer("total_price").notNull(),
+
+    status: orderStatusEnum("status").notNull().default("pending"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userCreatedIdx: index("idx_orders_user_id_created_at").on(
+      table.userId,
+      table.createdAt
+    ),
+
+    sellerCreatedIdx: index("idx_orders_seller_id_created_at").on(
+      table.sellerId,
+      table.createdAt
+    ),
+  })
+);
+
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => productVariants.id),
+
+    quantity: integer("quantity").notNull(),
+
+    priceSnapshot: integer("price_snapshot").notNull(),
+  },
+  (table) => ({
+    orderIdx: index("idx_order_items_order_id").on(table.orderId),
+
+    variantIdx: index("idx_order_items_variant_id").on(table.variantId),
+  })
+);

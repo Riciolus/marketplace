@@ -232,18 +232,6 @@ export class ProductRepository {
     return deleted.rows[0];
   }
 
-  async lockProductById(productId: string, executor: PoolExecutor) {
-    await executor.query(
-      `
-    SELECT id
-    FROM products
-    WHERE id = $1
-    FOR UPDATE
-    `,
-      [productId]
-    );
-  }
-
   // ========================
   // VARIANT LOGIC
   // ========================
