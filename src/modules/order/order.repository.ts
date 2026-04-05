@@ -99,4 +99,28 @@ export class OrderRepository {
 
     await executor.query(query, values);
   }
+
+  async findOrders(
+    userId: string,
+    limit: number,
+    offset: number,
+    executor: PoolExecutor = this.executor
+  ) {
+    const result = await executor.query(
+      `
+      SELECT
+        id,
+        status,
+        total_price,
+        created_at
+      FROM orders
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+      `,
+      [userId, limit, offset]
+    );
+
+    return result.rows;
+  }
 }

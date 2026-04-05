@@ -93,4 +93,8 @@ export class OrderService {
       };
     });
   }
+
+  async getOrders(userId: string, limit: number, offset: number) {
+    return await this.repo.findOrders(userId, limit, offset);
+  }
 }
