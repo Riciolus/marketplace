@@ -1,3 +1,4 @@
+import type { QueryResultRow } from "pg";
 import { withTransaction } from "../../infrastructure/database/transaction.js";
 import { BadRequestError, NotFoundError } from "../../shared/errors/AppError.js";
 import type { OrderRepository } from "./order.repository.js";
@@ -96,5 +97,28 @@ export class OrderService {
 
   async getOrders(userId: string, limit: number, offset: number) {
     return await this.repo.findOrders(userId, limit, offset);
+  }
+
+  async getOrderById(userId: string, orderId: string) {
+    const rows = await this.repo.findOrderById(userId, orderId);
+
+    if (rows.length === 0) {
+      throw new NotFoundError("Order not found");
+    }
+
+    const first = rows[0] as QueryResultRow;
+
+    return {
+      id: first.id,
+      status: first.status,
+      totalPrice: first.total_price,
+      createdAt: first.created_at,
+      items: rows.map((row) => ({
+        variantId: row.variant_id,
+        quantity: row.quantity,
+        priceSnapshot: row.price_snapshot,
+        attributes: row.attributes,
+      })),
+    };
   }
 }

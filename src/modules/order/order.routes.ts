@@ -8,6 +8,12 @@ export async function orderRoutes(
 ) {
   app.get("/", { preHandler: [authGuard] }, controller.getOrders.bind(controller));
 
+  app.get(
+    "/:id",
+    { preHandler: [authGuard] },
+    controller.getOrderById.bind(controller)
+  );
+
   app.post(
     "/checkout",
     { preHandler: [authGuard] },

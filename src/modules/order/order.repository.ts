@@ -123,4 +123,54 @@ export class OrderRepository {
 
     return result.rows;
   }
+
+  // async findOrderById(
+  //   userId: string,
+  //   orderId: string,
+  //   executor: PoolExecutor = this.executor
+  // ) {
+  //   const result = await executor.query(`
+  //     SELECT
+  //       id,
+  //       status,
+  //       total_price,
+  //       created_at
+
+  //     FROM orders
+  //     INNER JOIN order_items i ON o.id = i.order_id
+  //     WHERE o.id = $1
+  //       AND o.user_id = $2
+  //     `);
+  // }
+
+  async findOrderById(
+    userId: string,
+    orderId: string,
+    executor: PoolExecutor = this.executor
+  ) {
+    const result = await executor.query(
+      `
+      SELECT
+        o.id,
+        o.status,
+        o.total_price,
+        o.created_at,
+        i.variant_id,
+        i.quantity,
+        i.price_snapshot,
+        pv.attributes
+
+      FROM orders o
+      
+      JOIN order_items i ON o.id = i.order_id
+      JOIN product_variants pv ON pv.id = i.variant_id
+
+      WHERE o.id = $1 
+        AND o.user_id = $2
+      `,
+      [orderId, userId]
+    );
+
+    return result.rows;
+  }
 }

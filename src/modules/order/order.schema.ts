@@ -29,3 +29,7 @@ export const getOrdersQuerySchema = z.object({
 });
 
 export type GetOrdersQuery = z.infer<typeof getOrdersQuerySchema>;
+
+export const orderIdParamSchema = z.object({
+  id: z.string(),
+});
