@@ -121,4 +121,29 @@ export class OrderService {
       })),
     };
   }
+
+  async payOrder(userId: string, orderId: string) {
+    return withTransaction(async (executor) => {
+      const order = await this.repo.getOrderForUpdate(userId, orderId, executor);
+
+      console.log(order);
+
+      if (!order) {
+        throw new NotFoundError("Order not found");
+      }
+
+      if (order.status !== "pending") {
+        throw new BadRequestError("Order cannot be paid");
+      }
+
+      await this.repo.updateOrderStatus(orderId, "paid", executor);
+
+      return {
+        id: orderId,
+        status: "paid",
+        totalPrice: order.total_price,
+        updatedAt: new Date(),
+      };
+    });
+  }
 }

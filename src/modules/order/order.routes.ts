@@ -19,4 +19,10 @@ export async function orderRoutes(
     { preHandler: [authGuard] },
     controller.checkout.bind(controller)
   );
+
+  app.patch(
+    "/:id/pay",
+    { preHandler: [authGuard] },
+    controller.payOrder.bind(controller)
+  );
 }

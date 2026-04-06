@@ -124,25 +124,6 @@ export class OrderRepository {
     return result.rows;
   }
 
-  // async findOrderById(
-  //   userId: string,
-  //   orderId: string,
-  //   executor: PoolExecutor = this.executor
-  // ) {
-  //   const result = await executor.query(`
-  //     SELECT
-  //       id,
-  //       status,
-  //       total_price,
-  //       created_at
-
-  //     FROM orders
-  //     INNER JOIN order_items i ON o.id = i.order_id
-  //     WHERE o.id = $1
-  //       AND o.user_id = $2
-  //     `);
-  // }
-
   async findOrderById(
     userId: string,
     orderId: string,
@@ -172,5 +153,34 @@ export class OrderRepository {
     );
 
     return result.rows;
+  }
+
+  async getOrderForUpdate(userId: string, orderId: string, executor: PoolExecutor) {
+    const result = await executor.query(
+      `
+      SELECT
+        id,
+        status,
+        total_price
+      FROM orders
+      WHERE id = $1 
+        AND user_id = $2
+      FOR UPDATE
+      `,
+      [orderId, userId]
+    );
+
+    return result.rows[0];
+  }
+
+  async updateOrderStatus(orderId: string, status: string, executor: PoolExecutor) {
+    await executor.query(
+      `
+      UPDATE orders
+      SET status = $1
+      WHERE id = $2
+      `,
+      [status, orderId]
+    );
   }
 }

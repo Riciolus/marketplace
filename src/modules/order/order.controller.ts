@@ -37,4 +37,13 @@ export class OrderController {
 
     reply.send({ status: true, data });
   }
+
+  async payOrder(request: FastifyRequest, reply: FastifyReply) {
+    const userId = request.user.userId;
+    const { id: orderId } = orderIdParamSchema.parse(request.params);
+
+    const result = await this.service.payOrder(userId, orderId);
+
+    reply.send({ status: true, data: { order: result } });
+  }
 }
