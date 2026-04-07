@@ -46,4 +46,13 @@ export class OrderController {
 
     reply.send({ status: true, data: { order: result } });
   }
+
+  async cancelOrder(request: FastifyRequest, reply: FastifyReply) {
+    const userId = request.user.userId;
+    const { id: orderId } = orderIdParamSchema.parse(request.params);
+
+    const result = await this.service.cancelOrder(userId, orderId);
+
+    reply.send({ status: true, data: { order: result } });
+  }
 }

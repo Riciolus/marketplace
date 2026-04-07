@@ -126,8 +126,6 @@ export class OrderService {
     return withTransaction(async (executor) => {
       const order = await this.repo.getOrderForUpdate(userId, orderId, executor);
 
-      console.log(order);
-
       if (!order) {
         throw new NotFoundError("Order not found");
       }
@@ -143,6 +141,37 @@ export class OrderService {
         status: "paid",
         totalPrice: order.total_price,
         updatedAt: new Date(),
+      };
+    });
+  }
+
+  async cancelOrder(userId: string, orderId: string) {
+    return withTransaction(async (executor) => {
+      const order = await this.repo.getOrderForUpdate(userId, orderId, executor);
+
+      if (!order) {
+        throw new NotFoundError("Order not found");
+      }
+
+      if (order.status !== "pending") {
+        throw new BadRequestError("Only pending orders can be cancelled");
+      }
+
+      const items = await this.repo.findOrderItemsForUpdate(orderId, executor);
+
+      for (const item of items) {
+        await this.repo.incrementVariantStock(
+          item.variant_id,
+          item.quantity,
+          executor
+        );
+      }
+
+      await this.repo.updateOrderStatus(orderId, "cancelled", executor);
+
+      return {
+        id: orderId,
+        status: "cancelled",
       };
     });
   }

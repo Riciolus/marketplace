@@ -25,4 +25,10 @@ export async function orderRoutes(
     { preHandler: [authGuard] },
     controller.payOrder.bind(controller)
   );
+
+  app.patch(
+    "/:id/cancel",
+    { preHandler: [authGuard] },
+    controller.cancelOrder.bind(controller)
+  );
 }

@@ -28,6 +28,24 @@ export class OrderRepository {
     return result.rows;
   }
 
+  async incrementVariantStock(
+    variantId: string,
+    quantity: number,
+    executor: PoolExecutor = this.executor
+  ) {
+    const result = await executor.query(
+      `
+      UPDATE product_variants
+      SET stock = stock + $1
+      WHERE id = $2      `,
+      [quantity, variantId]
+    );
+
+    if (result.rowCount === 0) {
+      throw new BadRequestError("Stock update failed");
+    }
+  }
+
   async decrementVariantStock(
     variantId: string,
     quantity: number,
@@ -182,5 +200,21 @@ export class OrderRepository {
       `,
       [status, orderId]
     );
+  }
+
+  async findOrderItemsForUpdate(orderId: string, executor: PoolExecutor) {
+    const result = await executor.query(
+      `
+      SELECT
+        variant_id,
+        quantity
+      FROM order_items
+      WHERE order_id = $1
+      FOR UPDATE
+      `,
+      [orderId]
+    );
+
+    return result.rows;
   }
 }
